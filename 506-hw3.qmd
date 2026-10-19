@@ -1,0 +1,39 @@
+---
+title: "506-hw3"
+author: "Zhixuan Li"
+format:
+  html:
+    embed-resources: true
+editor: visual
+---
+
+Repository link: https://github.com/lizhixuan202603-sudo/506-hw3
+
+```{r}
+#install.packages("tidyverse")
+#install.packages("kableExtra")
+library(tidyverse)
+library(haven)
+library(broom)
+library(knitr)
+library(kableExtra)
+library(emmeans)
+```
+
+
+#Problem 1
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
