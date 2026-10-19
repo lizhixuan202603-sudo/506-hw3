@@ -28,6 +28,8 @@ Download the file AUX_I and DEMO_I, determine how to read them into R, merge the
 
 ```{r}
 
+#| label: p1-a
+
 #' Merge NHANES AUX_I and DEMO_I on SEQN, keeping matched records only.
 #'
 #' @param aux_path Character. Path to the AUX_I.xpt file.
@@ -49,14 +51,16 @@ dim(dat)
 
 ```
 
-**Sources and Citation:** 
-The AUX_I (Audiometry) and DEMO_I (Demographics) files were downloaded from the NHANES 2015-2016 database (CDC/NCHS) at [AUX_I](https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/AUX_I.htm) and [DEMO_I](https://wwwn.cdc.gov/Nchs/Nhanes/2015-2016/DEMO_I.htm). The `haven` package was used to read the SAS transport (`.xpt`) format in R (Wickham et al., 2023).
+Result: The merged data.frame contains r nrow(dat) rows and r ncol(dat) columns.
+
+Sources and Citation: The AUX_I (Audiometry) and DEMO_I (Demographics) files were downloaded from the NHANES 2015-2016 database (CDC/NCHS) at AUX_I and DEMO_I. The haven package was used to read the SAS transport (.xpt) format in R (Wickham et al., 2023).
 
 
 ###b. Variable Cleaning
 Clean up the specified variables: ensure all missing values (e.g., 999) are converted to NA, and categorical variables are converted to factors with informative levels. Address the ordering issue with the income variable.
 
 ```{r}
+#| label: p1-b
 #' Convert NHANES sentinel missing codes to NA.
 #'
 #' @param x A numeric vector.
@@ -113,13 +117,13 @@ dat_clean <- dat_clean %>%
 
 Explanation: INDFMIN2 codes 1-12 represent increasing income brackets, but code 13 ("Over $20,000") is a coarser category that breaks the numerical order. I set ordered = FALSE to correctly treat it as a nominal factor. For the continuous covariate in the models, the income_raw numeric code is used.
 
-**Note on Income Ordering:** The issue with `INDFMIN2` was identified using the official NHANES 2015-2016 DEMO_I codebook, which shows that code 13 ("Over $20,000") breaks the monotonic sequence of codes 1 through 12.
+Note on Income Ordering: The issue with INDFMIN2 was identified using the official NHANES 2015-2016 DEMO_I codebook, which shows that code 13 ("Over $20,000") breaks the monotonic sequence of codes 1 through 12.
 
-
-###c. Poisson Regression Models and Tables
+### c. Poisson Regression Models and Tables
 Fit four Poisson regression models (1R, 2R, 1L, 2L). Produce tables presenting the estimated incidence risk ratios (IRR), sample size, pseudo-R^2, and AIC values.
 
 ```{r}
+#| label: p1-c
 # Fit the four models
 m1R <- glm(tymp_R ~ gender, data = dat_clean, family = poisson)
 m2R <- glm(tymp_R ~ gender + citizenship + children_5u + income_raw, data = dat_clean, family = poisson)
@@ -162,18 +166,20 @@ stat_tab <- tibble(
 kable(stat_tab, caption = "Table 2. Model Fit Statistics") %>%
   kable_classic(full_width = FALSE)
 ```
-
-###d. Inference from Model 2L
+### d. Inference from Model 2L
 1. Difference in incidence risk ratio between males and females:
 
-Hypotheses:H0: IRR(Female vs Male) = 1 (No difference in the incidence risk ratio of left-ear tympanometric width between sexes).
-H1 : IRR ≠ 1.
+Hypotheses:
+H0: IRR(Female vs Male) = 1 (No difference in the incidence risk ratio of left-ear tympanometric width between sexes).
+H1: IRR ≠ 1.
+
 ```{r}
+#| label: p1-d1
 summary(m2L)$coefficients["genderFemale", ]
 ```
 
 Result & Interpretation:
-The Wald test yields a z-statistic of r round(summary(m2L)$coefficients["genderFemale", "z value"], 3) and a p-value of r format.pval(summary(m2L)$coefficients["genderFemale", "Pr(>|z|)"], digits = 3). The estimated IRR is r round(exp(coef(m2L)["genderFemale"]), 3) (95% CI: r round(exp(confint(m2L)["genderFemale", ]), 3)). At α = 0.05, we reject H0. This indicates there is a statistically significant difference in the incidence risk ratio between males and females. Specifically, females have a higher incidence risk ratio compared to males, holding other covariates constant.
+The Wald test yields a z-statistic of 5.847 and a p-value of < 0.0001 (specifically, 5.005618e-09). The estimated IRR is 1.023 (95% CI: 1.015, 1.031). At α=0.05, we reject H0. This indicates there is a statistically significant difference in the incidence risk ratio between males and females. Specifically, females have a higher incidence risk ratio compared to males, holding other covariates constant.
 
 2. Difference in predicted values between men and women:
 
@@ -184,8 +190,7 @@ H1: Expected values differ.
 emm <- emmeans(m2L, ~ gender, type = "response")
 pairs(emm)
 ```
-Result & Interpretation:
-The emmeans output provides the pairwise contrast between Male and Female with a p-value of < 0.0001. At α=0.05, we reject H0. The estimated ratio of predicted values (Male / Female) is r round(summary(pairs(emm))$ratio, 3). This implies that after adjusting for citizenship, number of children, and income, the predicted left-ear tympanometric width for males is significantly lower than for females by approximately r round((1 - summary(pairs(emm))$ratio) * 100, 1)%.
+The emmeans output provides the pairwise contrast between Male and Female with a p-value of < 0.0001. At α=0.05, we reject H0. The estimated ratio of predicted values (Male / Female) is 0.978. This implies that after adjusting for citizenship, number of children, and income, the predicted left-ear tympanometric width for males is significantly lower than for females by approximately 2.2%.
 
 
 ## Problem 2 - Sakila
@@ -211,12 +216,11 @@ con <- dbConnect(SQLite(), "sakila_master.db")
 
 ```
 
-###a. Customers per store and active percentage
+### a. Customers per store and active percentage
 Question: For each store, how many customers does that store have, and what percentage of customers of that store are active in the system?
 
 ```{r}
 #| label: p2-a
-
 # --- Approach 1: R Operations ---
 customer_df <- dbGetQuery(con, "SELECT store_id, active FROM customer")
 
@@ -256,15 +260,14 @@ bench_a <- microbenchmark(
 
 print(summary(bench_a), unit = "ms")
 ```
-Interpretation: Both approaches yield identical results. The microbenchmark summary shows that the SQL approach is generally faster because the aggregation happens at the database engine level, minimizing data transfer to R memory. However, the R approach provides a more readable and traceable pipeline.
+Interpretation: Both approaches yield identical results. The microbenchmark summary shows that the SQL approach is significantly faster (e.g., ~149ms vs ~892ms median) because the aggregation happens at the database engine level, minimizing data transfer to R memory. However, the R approach provides a more readable and traceable pipeline.
 
 
-###b. Staff names and country
+### b. Staff names and country
 Question: Generate a table identifying the names and country of each staff member.
 
 ```{r}
 #| label: p2-b
-
 # --- Approach 1: R Operations ---
 staff_df  <- dbGetQuery(con, "SELECT staff_id, first_name, last_name, address_id FROM staff")
 address_df <- dbGetQuery(con, "SELECT address_id, city_id FROM address")
@@ -317,16 +320,15 @@ bench_b <- microbenchmark(
 print(summary(bench_b), unit = "ms")
 ```
 
-Interpretation: For multiple joins, the single SQL query is more efficient as it avoids transferring the intermediate tables (address, city, country) into R memory. The R approach requires multiple network/database calls and in-memory joins, which is slower but easier to debug.
+Interpretation: For multiple joins, the single SQL query is more efficient as it avoids transferring the intermediate tables (address, city, country) into R memory. The R approach requires multiple network/database calls and in-memory joins, which is slower (e.g., ~1937ms vs ~100ms) but easier to debug.
 
 
 
-###c. Film(s) rented for the highest dollar value
+### c. Film(s) rented for the highest dollar value
 Question: Identify the name(s) of the film(s) which was/were rented for the highest dollar value. (Hint: You can merge a table more than once.)
 
 ```{r}
 #| label: p2-c
-
 # --- Approach 1: R Operations ---
 payment_df <- dbGetQuery(con, "SELECT rental_id, amount FROM payment")
 rental_df  <- dbGetQuery(con, "SELECT rental_id, inventory_id FROM rental")
@@ -395,17 +397,19 @@ bench_c <- microbenchmark(
 print(summary(bench_c), unit = "ms")
 ```
 
-Interpretation:
-For a, the single SQL query is significantly faster because the aggregation is done within the database engine.
-For b, the difference is dramatic: the R approach takes over 2 seconds due to transferring multiple intermediate tables into memory and performing in-memory joins, whereas the SQL approach takes ~107ms.
-Interestingly, for c, the R approach (~14ms) is slightly faster than the SQL approach (~20ms). This highlights that while SQL engines are generally great at multi-table joins, R's dplyr is highly optimized in memory, and the overhead of a complex WITH (CTE) subquery in SQLite can sometimes negate the benefits of keeping data in the database. Both methods, however, execute well within a fraction of a second.
+Interpretation: For this specific query, the R approach (~13ms) is slightly faster than the SQL approach (~19ms). While SQL engines are generally great at multi-table joins, R's dplyr is highly optimized in memory. The overhead of a complex WITH (CTE) subquery in SQLite can sometimes negate the benefits of keeping data in the database. Both methods, however, execute well within a fraction of a second.
 
+```{r}
+#| label: p2-cleanup
+# Disconnect from the database after all queries are complete
+dbDisconnect(con)
+```
 
 
 ## Problem 3 - Australian Records
 
 ```{r}
-#| label: setup-p3
+#| label: p3-setup
 library(tidyverse)
 library(stringr)
 library(knitr)
@@ -414,10 +418,10 @@ library(kableExtra)
 # Read the data (trim whitespace just in case, following HW1 lesson)
 au <- read_csv("au-500.csv", show_col_types = FALSE) %>%
   mutate(across(where(is.character), trimws))
-
 ```
 
-###a. Percentage of .com websites
+### a. Percentage of .com websites
+Question: What percentage of the websites are .com's (as opposed to .net, .com.au, etc)?
 ```{r}
 #| label: p3-a
 pct_com <- au %>%
@@ -431,10 +435,11 @@ kable(pct_com, caption = "Percentage of .com websites") %>%
   kable_classic(full_width = FALSE)
 ```
 
-Interpretation: Approximately r pct_com$pct_com% of the websites end strictly with .com. Note that domains ending in .com.au are excluded by the $ anchor in the regex, as requested.
+Interpretation: The summary table shows that 0% of the websites end strictly with .com. Note that domains ending in .com.au are correctly excluded by the $ anchor in the regex, as requested.
 
 
-###b. Most common email domain
+### b. Most common email domain
+Question: What is the most common domain name amongst the email addresses?
 ```{r}
 #| label: p3-b
 email_domains <- au %>%
@@ -447,15 +452,15 @@ kable(email_domains, caption = "Most Common Email Domain") %>%
   kable_classic(full_width = FALSE)
 ```
 
-Interpretation: The most common email domain is r email_domains$domain, appearing r email_domains$n times in the dataset.
+Interpretation: The most common email domain is hotmail.com, appearing 114 times in the dataset.
 
 
-###c. Company names with non-alphabetic characters
+### c. Company names with non-alphabetic characters
+Question: What proportion of company names contain a non-alphabetic character, excluding commas and whitespace? What about if you also exclude ampersands ("&")?
 ```{r}
 #| label: p3-c
 company_stats <- au %>%
   summarise(
-    
     # [^A-Za-z ,] means "not a letter, not a comma, not a space"
     prop_non_alpha = mean(str_detect(company_name, "[^A-Za-z ,]"), na.rm = TRUE) * 100,
     
@@ -467,11 +472,14 @@ company_stats <- au %>%
 kable(company_stats, caption = "Proportion of Company Names with Non-Alphabetic Characters") %>%
   kable_classic(full_width = FALSE)
 ```
+Interpretation:
 
+9% of company names contain a non-alphabetic character (excluding commas and spaces).
+
+When ampersands (&) are also excluded, the proportion drops significantly to 0.8%. This suggests that the ampersand is the most frequent non-alphabetic character found in these company names.
 
 ### d. Standardize Phone Numbers
-
-**Question:** Make all phone numbers written like cell phones (4-3-3 format). Show it works by printing the first 10 phone numbers of each column.
+Question: Make all phone numbers written like cell phones (4-3-3 format). Show it works by printing the first 10 phone numbers of each column.
 
 ```{r}
 #| label: p3-d
@@ -510,6 +518,7 @@ kable(phone_preview, caption = "First 10 Phone Numbers Re-formatted") %>%
 
 ```
 
+Interpretation: The table confirms that landline numbers (e.g., 03-8174-9123) are successfully stripped of non-digit characters and re-formatted into the 4-3-3 cell phone layout (0381-749-123). The original cell phone numbers remain unchanged.
 
 ###e. Histogram of log(apartment numbers)
 Question: Produce a histogram of the log of the apartment numbers for all addresses.
@@ -534,7 +543,7 @@ hist(log(au_apt$apt_number),
 Interpretation: The histogram shows the distribution of the natural logarithm of the extracted apartment numbers. We filter out missing values and zeroes because the logarithm of zero is undefined. Most apartment numbers appear to be small.
 
 
-###f. Benford's Law on Apartment Numbers
+### f. Benford's Law on Apartment Numbers
 Question: Examine whether the apartment numbers appear to follow Benford’s law. Do you think the apartment numbers would pass as real data?
 
 ```{r}
@@ -569,14 +578,13 @@ cat("\nChi-square test p-value:", format.pval(chi_test$p.value, digits = 3), "\n
 
 
 Interpretation:
-The Chi-square test yields a p-value of r format.pval(chi_test$p.value, digits = 3).
+The Chi-square test yields a p-value of 1.67e-10.
 
-If p<0.05, we reject the null hypothesis that the apartment numbers follow Benford's law.
+Since p<0.05, we reject the null hypothesis that the apartment numbers follow Benford's law.
 
-Looking at the table, the observed proportions differ substantially from the Benford expected proportions (e.g., Benford predicts ~30.1% of numbers start with "1", but apartments often start with smaller numbers or specific floor numbers).
+Looking at the table, the observed proportions differ substantially from the Benford expected proportions (e.g., Benford predicts ~30.1% of numbers start with "1", but in our data, only 9.2% do, while numbers starting with 9 are much more frequent than expected).
 
 Because this is entirely synthetic/fake data generated for sample purposes, it does not exhibit the natural exponential growth patterns found in real-world financial or demographic data. Therefore, these apartment numbers would likely not pass as real data under a strict Benford's law audit.
-
 
 
 
