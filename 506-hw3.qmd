@@ -56,7 +56,7 @@ Result: The merged data.frame contains r nrow(dat) rows and r ncol(dat) columns.
 Sources and Citation: The AUX_I (Audiometry) and DEMO_I (Demographics) files were downloaded from the NHANES 2015-2016 database (CDC/NCHS) at AUX_I and DEMO_I. The haven package was used to read the SAS transport (.xpt) format in R (Wickham et al., 2023).
 
 
-###b. Variable Cleaning
+### b. Variable Cleaning
 Clean up the specified variables: ensure all missing values (e.g., 999) are converted to NA, and categorical variables are converted to factors with informative levels. Address the ordering issue with the income variable.
 
 ```{r}
@@ -520,7 +520,7 @@ kable(phone_preview, caption = "First 10 Phone Numbers Re-formatted") %>%
 
 Interpretation: The table confirms that landline numbers (e.g., 03-8174-9123) are successfully stripped of non-digit characters and re-formatted into the 4-3-3 cell phone layout (0381-749-123). The original cell phone numbers remain unchanged.
 
-###e. Histogram of log(apartment numbers)
+### e. Histogram of log(apartment numbers)
 Question: Produce a histogram of the log of the apartment numbers for all addresses.
 ```{r}
 #| label: p3-e
